@@ -1,0 +1,23 @@
+# RAG Agent 依赖包
+# 核心依赖
+faiss-cpu==1.7.4
+sentence-transformers==2.2.2
+openai==1.3.0
+python-dotenv==1.0.0
+
+# 文档处理
+markdown==3.5.1
+
+# 工具库
+numpy==1.24.3
+scipy==1.11.4
+scikit-learn==1.3.2
+
+# 日志和配置
+loguru==0.7.2
+pydantic==2.5.0
+
+# 开发工具
+pytest==7.4.3
+black==23.11.0
+flake8==6.1.0
