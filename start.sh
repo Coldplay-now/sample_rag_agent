@@ -105,6 +105,16 @@ check_config() {
         fi
     else
         print_success "配置文件已存在"
+        
+        # 检查关键配置项
+        if ! grep -q "DEEPSEEK_API_KEY=" .env || grep -q "DEEPSEEK_API_KEY=$" .env; then
+            print_warning "DeepSeek API密钥未配置，请编辑 .env 文件"
+            print_info "获取API密钥: https://platform.deepseek.com/api_keys"
+        fi
+        
+        if ! grep -q "EMBEDDING_MODEL=" .env; then
+            print_warning "嵌入模型未配置，将使用默认模型"
+        fi
     fi
 }
 
@@ -118,12 +128,18 @@ check_documents() {
         print_success "文档目录创建完成"
     fi
     
-    doc_count=$(find data/documents -name "*.md" -type f | wc -l)
-    if [ "$doc_count" -eq 0 ]; then
-        print_warning "文档目录为空，请添加一些Markdown文档"
+    # 统计各种格式的文档
+    md_count=$(find data/documents -name "*.md" -type f 2>/dev/null | wc -l)
+    txt_count=$(find data/documents -name "*.txt" -type f 2>/dev/null | wc -l)
+    pdf_count=$(find data/documents -name "*.pdf" -type f 2>/dev/null | wc -l)
+    total_count=$((md_count + txt_count + pdf_count))
+    
+    if [ "$total_count" -eq 0 ]; then
+        print_warning "文档目录为空，请添加一些文档文件"
+        print_info "支持格式: .md, .txt, .pdf"
         print_info "示例：cp your_docs/*.md data/documents/"
     else
-        print_success "找到 $doc_count 个文档文件"
+        print_success "找到 $total_count 个文档文件 (MD:$md_count, TXT:$txt_count, PDF:$pdf_count)"
     fi
 }
 
@@ -131,6 +147,17 @@ check_documents() {
 run_test() {
     print_info "运行系统测试..."
     
+    # 检查是否有测试脚本
+    if [ -f "test_error_handling.py" ]; then
+        print_info "运行错误处理测试..."
+        if python test_error_handling.py; then
+            print_success "错误处理测试通过"
+        else
+            print_warning "错误处理测试部分失败，但系统仍可运行"
+        fi
+    fi
+    
+    # 运行主程序测试
     if python main.py --test; then
         print_success "系统测试通过"
         return 0
@@ -165,6 +192,8 @@ show_help() {
     echo "  --config, -c        显示配置信息"
     echo "  --debug, -d         启用调试模式"
     echo "  --docs DIR          指定文档目录"
+    echo "  --chat, -i          启动交互式聊天界面"
+    echo "  --version, -v       显示版本信息"
     echo
     echo "示例:"
     echo "  $0                  # 正常启动"
@@ -204,6 +233,37 @@ main() {
             check_documents
             print_success "环境设置完成"
             exit 0
+            ;;
+        --config|-c)
+            print_info "当前配置信息:"
+            if [ -f ".env" ]; then
+                echo "📄 配置文件: .env"
+                grep -v "API_KEY" .env | grep "=" || echo "  (配置为空)"
+                if grep -q "DEEPSEEK_API_KEY=" .env && ! grep -q "DEEPSEEK_API_KEY=$" .env; then
+                    echo "🔑 API密钥: 已配置"
+                else
+                    echo "🔑 API密钥: 未配置"
+                fi
+            else
+                echo "❌ 配置文件不存在"
+            fi
+            exit 0
+            ;;
+        --version|-v)
+            echo "RAG Agent v1.0.0"
+            echo "基于DeepSeek API和FAISS的检索增强生成系统"
+            exit 0
+            ;;
+        --chat|-i)
+            check_python
+            check_venv
+            activate_venv
+            install_dependencies
+            check_config
+            check_documents
+            print_info "启动交互式聊天界面..."
+            python chat_interface.py
+            exit $?
             ;;
     esac
     
