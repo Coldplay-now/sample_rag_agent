@@ -38,13 +38,26 @@ class Config(BaseModel):
     
     # 文件路径配置
     data_dir: str = Field(default="./data", description="数据目录路径")
+    documents_dir: str = Field(default="./data/documents", description="文档目录路径")
     index_dir: str = Field(default="./index", description="索引目录路径")
     cache_dir: str = Field(default="./cache", description="缓存目录路径")
+    logs_dir: str = Field(default="./logs", description="日志目录路径")
+    
+    # 检索配置扩展
+    top_k: int = Field(default=5, description="检索返回的文档数量")
+    enable_query_expansion: bool = Field(default=False, description="是否启用查询扩展")
+    enable_rerank: bool = Field(default=True, description="是否启用重排序")
+    
+    # LLM 配置
+    max_tokens: int = Field(default=2048, description="最大生成token数")
+    temperature: float = Field(default=0.7, description="生成温度参数")
+    max_history: int = Field(default=10, description="最大对话历史数")
+    enable_streaming: bool = Field(default=True, description="是否启用流式响应")
     
     # 系统配置
     log_level: str = Field(default="INFO", description="日志级别")
     max_memory_mb: int = Field(default=2048, description="最大内存使用量(MB)")
-    enable_rerank: bool = Field(default=True, description="是否启用重排序")
+    debug_mode: bool = Field(default=False, description="是否启用调试模式")
     stream_response: bool = Field(default=True, description="是否启用流式响应")
     
     @validator('chunk_size')
@@ -126,13 +139,26 @@ def load_config(env_file: Optional[str] = None) -> Config:
         
         # 文件路径配置
         'data_dir': os.getenv('DATA_DIR', './data'),
+        'documents_dir': os.getenv('DOCUMENTS_DIR', './data/documents'),
         'index_dir': os.getenv('INDEX_DIR', './index'),
         'cache_dir': os.getenv('CACHE_DIR', './cache'),
+        'logs_dir': os.getenv('LOGS_DIR', './logs'),
+        
+        # 检索配置扩展
+        'top_k': int(os.getenv('TOP_K', '5')),
+        'enable_query_expansion': os.getenv('ENABLE_QUERY_EXPANSION', 'false').lower() == 'true',
+        'enable_rerank': os.getenv('ENABLE_RERANK', 'true').lower() == 'true',
+        
+        # LLM 配置
+        'max_tokens': int(os.getenv('MAX_TOKENS', '2048')),
+        'temperature': float(os.getenv('TEMPERATURE', '0.7')),
+        'max_history': int(os.getenv('MAX_HISTORY', '10')),
+        'enable_streaming': os.getenv('ENABLE_STREAMING', 'true').lower() == 'true',
         
         # 系统配置
         'log_level': os.getenv('LOG_LEVEL', 'INFO'),
         'max_memory_mb': int(os.getenv('MAX_MEMORY_MB', '2048')),
-        'enable_rerank': os.getenv('ENABLE_RERANK', 'true').lower() == 'true',
+        'debug_mode': os.getenv('DEBUG_MODE', 'false').lower() == 'true',
         'stream_response': os.getenv('STREAM_RESPONSE', 'true').lower() == 'true',
     }
     
@@ -154,10 +180,10 @@ def setup_directories(config: Config) -> None:
     """
     directories = [
         config.data_dir,
-        f"{config.data_dir}/documents",
+        config.documents_dir,
         config.index_dir,
         config.cache_dir,
-        "./logs"
+        config.logs_dir
     ]
     
     for directory in directories:

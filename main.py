@@ -92,6 +92,12 @@ def parse_arguments() -> argparse.Namespace:
         help="显示系统信息"
     )
     
+    parser.add_argument(
+        "--chat",
+        action="store_true",
+        help="启动交互式聊天界面"
+    )
+    
     # 调试选项
     parser.add_argument(
         "--debug",
@@ -156,7 +162,7 @@ def setup_environment(args: argparse.Namespace) -> Config:
         log_level = "INFO"
     
     # 设置日志和目录
-    setup_logging(config.logs_dir, log_level)
+    setup_logging(config)
     setup_directories(config)
     
     logger.info(f"RAG Agent 启动 - 配置加载完成")
@@ -316,8 +322,7 @@ def test_system(config: Config) -> bool:
         print("\n4️⃣ 测试向量存储...")
         vector_store = VectorStore(
             model_name=config.embedding_model,
-            index_dir=config.index_dir,
-            cache_dir=config.cache_dir
+            index_dir=config.index_dir
         )
         print("  ✅ 向量存储初始化成功")
         
@@ -377,17 +382,17 @@ def rebuild_index(config: Config) -> bool:
         print("🔍 初始化向量存储...")
         vector_store = VectorStore(
             model_name=config.embedding_model,
-            index_dir=config.index_dir,
-            cache_dir=config.cache_dir
+            index_dir=config.index_dir
         )
         
         # 处理文档
-        print(f"\n📁 扫描文档目录: {config.documents_dir}")
-        if not config.documents_dir.exists():
-            print(f"❌ 文档目录不存在: {config.documents_dir}")
+        documents_dir = Path(config.documents_dir)
+        print(f"\n📁 扫描文档目录: {documents_dir}")
+        if not documents_dir.exists():
+            print(f"❌ 文档目录不存在: {documents_dir}")
             return False
         
-        chunks = doc_processor.process_directory(config.documents_dir)
+        chunks = doc_processor.process_documents(str(documents_dir))
         if not chunks:
             print("⚠️  未找到任何文档")
             return False
@@ -448,14 +453,22 @@ def main() -> None:
                 sys.exit(1)
             
             # 如果只是重建索引，则退出
-            if not any([args.config, args.info, args.test]):
+            if not any([args.config, args.info, args.test, args.chat]):
                 print("\n🎉 索引重建完成，可以启动聊天界面了")
                 return
         
-        # 启动聊天界面
-        print("\n🚀 启动RAG Agent聊天界面...")
-        chat = ChatInterface(config)
-        chat.run()
+        if args.chat:
+            # 启动聊天界面
+            print("\n🚀 启动RAG Agent聊天界面...")
+            chat = ChatInterface(config)
+            chat.run()
+            return
+        
+        # 默认启动聊天界面（如果没有指定其他操作）
+        if not any([args.config, args.info, args.test, args.rebuild]):
+            print("\n🚀 启动RAG Agent聊天界面...")
+            chat = ChatInterface(config)
+            chat.run()
         
     except KeyboardInterrupt:
         print("\n\n👋 程序被用户中断")
