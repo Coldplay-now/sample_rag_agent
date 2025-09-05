@@ -133,8 +133,7 @@ class ChatInterface:
             print("🔍 初始化向量存储...")
             self.vector_store = VectorStore(
                 model_name=self.config.embedding_model,
-                index_dir=self.config.index_dir,
-                cache_dir=self.config.cache_dir
+                index_dir=self.config.index_dir
             )
             
             # 检查是否需要构建索引
