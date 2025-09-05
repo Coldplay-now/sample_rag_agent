@@ -312,11 +312,12 @@ def test_system(config: Config) -> bool:
             chunk_overlap=config.chunk_overlap
         )
         
-        if config.documents_dir.exists():
-            chunks = doc_processor.process_directory(config.documents_dir)
+        documents_path = Path(config.documents_dir)
+        if documents_path.exists():
+            chunks = doc_processor.process_documents(str(documents_path))
             print(f"  ✅ 文档处理成功，找到 {len(chunks)} 个分块")
         else:
-            print(f"  ⚠️  文档目录不存在: {config.documents_dir}")
+            print(f"  ⚠️  文档目录不存在: {documents_path}")
         
         # 测试向量存储
         print("\n4️⃣ 测试向量存储...")
@@ -386,7 +387,7 @@ def rebuild_index(config: Config) -> bool:
         )
         
         # 处理文档
-        documents_dir = Path(config.documents_dir)
+        documents_dir = Path(config.documents_dir).resolve()
         print(f"\n📁 扫描文档目录: {documents_dir}")
         if not documents_dir.exists():
             print(f"❌ 文档目录不存在: {documents_dir}")

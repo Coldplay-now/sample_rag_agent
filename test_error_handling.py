@@ -3,6 +3,7 @@
 
 import os
 import tempfile
+from pathlib import Path
 from config import load_config
 from document_processor import DocumentProcessor
 from vector_store import VectorStore
@@ -44,7 +45,7 @@ def test_document_processing_errors():
     processor = DocumentProcessor(config)
     
     # 测试不存在的目录
-    chunks = processor.process_documents('/nonexistent/directory')
+    chunks = processor.process_documents(Path('/nonexistent/directory'))
     if len(chunks) != 0:
         raise Exception('应该返回空列表')
     
@@ -68,7 +69,7 @@ def test_vector_store_errors():
     vector_store = VectorStore(
         model_name=config.embedding_model,
         device=config.embedding_device,
-        index_dir=config.index_dir
+        index_dir=Path(config.index_dir)
     )
     vector_store.build_index([])  # 空列表应该被正确处理
 
@@ -93,7 +94,7 @@ def test_retrieval_edge_cases():
     vector_store = VectorStore(
         model_name=config.embedding_model,
         device=config.embedding_device,
-        index_dir=config.index_dir
+        index_dir=Path(config.index_dir)
     )
     vector_store.build_index(chunks)
     retriever = Retriever(vector_store)
@@ -174,7 +175,7 @@ def test_memory_limits():
     vector_store = VectorStore(
         model_name=config.embedding_model,
         device=config.embedding_device,
-        index_dir=config.index_dir
+        index_dir=Path(config.index_dir)
     )
     vector_store.build_index(chunks)
     
